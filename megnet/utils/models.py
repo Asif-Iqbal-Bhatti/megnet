@@ -1,6 +1,7 @@
 """
 Model utilities, mainly for model loading and download
 """
+
 import logging
 import os
 from glob import glob
@@ -19,6 +20,8 @@ LOCAL_MODEL_PATH = os.path.join(CWD, "./mvl_models")
 
 MODEL_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), "../../mvl_models")
 
+qm9_models = glob(os.path.join(MODEL_PATH, "qm9-2018.6.1/*.hdf5"))
+
 MODEL_MAPPING = {
     "Eform_MP_2019": "mp-2019.4.1/formation_energy.hdf5",
     "Eform_MP_2018": "mp-2018.6.1/formation_energy.hdf5",
@@ -29,14 +32,10 @@ MODEL_MAPPING = {
     "logG_MP_2018": "mp-2018.6.1/log10G.hdf5",
     "logK_MP_2019": "mp-2019.4.1/log10K.hdf5",
     "logG_MP_2019": "mp-2019.4.1/log10G.hdf5",
+} | {
+    f"QM9_{i}_2018": f"qm9-2018.6.1/{i}.hdf5"
+    for i in [j.split("/")[-1].split(".")[0] for j in qm9_models]
 }
-
-qm9_models = glob(os.path.join(MODEL_PATH, "qm9-2018.6.1/*.hdf5"))
-
-MODEL_MAPPING.update(
-    {f"QM9_{i}_2018": f"qm9-2018.6.1/{i}.hdf5" for i in [j.split("/")[-1].split(".")[0] for j in qm9_models]}
-)
-
 
 AVAILABLE_MODELS = list(MODEL_MAPPING.keys())
 

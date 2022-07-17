@@ -197,8 +197,7 @@ class CrystalGraphLayer(GraphNetworkLayer):
 
     @staticmethod
     def _mlp(input_, weights, bias):
-        output = kb.dot(input_, weights) + bias
-        return output
+        return kb.dot(input_, weights) + bias
 
     def get_config(self):
         """

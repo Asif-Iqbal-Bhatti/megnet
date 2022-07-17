@@ -42,11 +42,7 @@ class MEGNetDescriptor:
 
         all_names = [i.name for i in layers if any(i.name.startswith(j) for j in important_prefix)]
 
-        if any(i.startswith("megnet") for i in all_names):
-            self.version = "v2"
-        else:
-            self.version = "v1"
-
+        self.version = "v2" if any(i.startswith("megnet") for i in all_names) else "v1"
         valid_outputs = [i.output for i in layers if any(i.name.startswith(j) for j in important_prefix)]
 
         outputs = []
@@ -54,7 +50,7 @@ class MEGNetDescriptor:
         for i, j in zip(all_names, valid_outputs):
             if isinstance(j, list):
                 for k, l in enumerate(j):
-                    valid_names.append(i + f"_{k}")
+                    valid_names.append(f"{i}_{k}")
                     outputs.append(l)
             else:
                 valid_names.append(i)
@@ -84,9 +80,7 @@ class MEGNetDescriptor:
         return result
 
     def _get_features(self, structure: StructureOrMolecule, prefix: str, level: int, index: int = None) -> np.ndarray:
-        name = prefix
-        if level is not None:
-            name = f"{prefix}_{level}"
+        name = f"{prefix}_{level}" if level is not None else prefix
         if index is not None:
             name += f"_{index}"
 
@@ -97,12 +91,12 @@ class MEGNetDescriptor:
         return out_all[ind][0]
 
     def _get_updated_prefix_level(self, prefix: str, level: int):
-        mapping = {
-            "meg_net_layer": ["megnet", level - 1],
-            "set2_set": ["set2set_atom" if level == 1 else "set2set_bond", None],
-            "concatenate": ["concatenate", None],
-        }
         if self.version == "v2":
+            mapping = {
+                "meg_net_layer": ["megnet", level - 1],
+                "set2_set": ["set2set_atom" if level == 1 else "set2set_bond", None],
+                "concatenate": ["concatenate", None],
+            }
             return mapping[prefix][0], mapping[prefix][1]  # type: ignore
         return prefix, level
 

@@ -112,8 +112,8 @@ for fidelity_id, fidelity in enumerate(ALL_FIDELITIES):
         # the new id is of the form mp-id_fidelity, e.g., mp-1234_pbe
         material_ids.append(f"{mp_id}_{fidelity}")
 
-final_graphs = {i: j for i, j in zip(material_ids, graphs)}
-final_targets = {i: j for i, j in zip(material_ids, targets)}
+final_graphs = dict(zip(material_ids, graphs))
+final_targets = dict(zip(material_ids, targets))
 
 
 #  4. Data splits

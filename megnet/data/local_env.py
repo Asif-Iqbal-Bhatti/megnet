@@ -56,17 +56,15 @@ class MinimumDistanceNNAll(NearNeighbors):
         site = structure[n]
         neighs_dists = structure.get_neighbors(site, self.cutoff)
 
-        siw = []
-        for nn in neighs_dists:
-            siw.append(
-                {
-                    "site": nn,
-                    "image": self._get_image(structure, nn),
-                    "weight": nn.nn_distance,
-                    "site_index": self._get_original_site(structure, nn),
-                }
-            )
-        return siw
+        return [
+            {
+                "site": nn,
+                "image": self._get_image(structure, nn),
+                "weight": nn.nn_distance,
+                "site_index": self._get_original_site(structure, nn),
+            }
+            for nn in neighs_dists
+        ]
 
 
 class AllAtomPairs(NearNeighbors):
@@ -85,11 +83,11 @@ class AllAtomPairs(NearNeighbors):
 
         """
         site = molecule[n]
-        siw = []
-        for i, s in enumerate(molecule):
-            if i != n:
-                siw.append({"site": s, "image": None, "weight": site.distance(s), "site_index": i})
-        return siw
+        return [
+            {"site": s, "image": None, "weight": site.distance(s), "site_index": i}
+            for i, s in enumerate(molecule)
+            if i != n
+        ]
 
 
 def serialize(identifier: Union[str, NearNeighbors]):

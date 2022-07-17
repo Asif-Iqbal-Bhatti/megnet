@@ -12,21 +12,14 @@ from megnet.data.molecule import (MolecularGraph, MolecularGraphBatchGenerator,
                                   ring_to_vector)
 from megnet.utils.general import to_list
 
-if pybel is None:
-    import_failed = True
-else:
-    import_failed = False
-
+import_failed = pybel is None
 module_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 def equal(x, y):
     if isinstance(x, list):
-        return all([i == j for i, j in zip(x, y)])
-    if isinstance(x, float):
-        return abs(x - y) < 0.01
-    else:
-        return x == y
+        return all(i == j for i, j in zip(x, y))
+    return abs(x - y) < 0.01 if isinstance(x, float) else x == y
 
 
 class QM9Test(unittest.TestCase):

@@ -12,14 +12,14 @@ with open(os.path.join(this_dir, "README.md"), encoding="utf-8") as f:
 with open("megnet/__init__.py", encoding="utf-8") as fd:
     try:
         lines = ""
-        for item in fd.readlines():
+        for item in fd:
             item = item
             lines += item + "\n"
     except Exception as exc:
         raise Exception(f"Caught exception {exc}")
 
 
-version = re.search('__version__ = "(.*)"', lines).group(1)
+version = re.search('__version__ = "(.*)"', lines)[1]
 
 
 setup(

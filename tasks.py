@@ -76,13 +76,14 @@ def release_github(ctx):
     toks = re.split(r"\#+", contents)
     desc = toks[1].strip()
     payload = {
-        "tag_name": "v" + NEW_VER,
+        "tag_name": f"v{NEW_VER}",
         "target_commitish": "master",
-        "name": "v" + NEW_VER,
+        "name": f"v{NEW_VER}",
         "body": desc,
         "draft": False,
         "prerelease": False,
     }
+
     response = requests.post(
         "https://api.github.com/repos/materialsvirtuallab/megnet/releases",
         data=json.dumps(payload),
@@ -93,8 +94,11 @@ def release_github(ctx):
 
 @task
 def update_changelog(ctx):
-    output = subprocess.check_output(["git", "log", "--pretty=format:%s", "v%s..HEAD" % CURRENT_VER])
-    lines = ["* " + l for l in output.decode("utf-8").strip().split("\n")]
+    output = subprocess.check_output(
+        ["git", "log", "--pretty=format:%s", f"v{CURRENT_VER}..HEAD"]
+    )
+
+    lines = [f"* {l}" for l in output.decode("utf-8").strip().split("\n")]
     with open("CHANGES.rst") as f:
         contents = f.read()
     l = "=========="

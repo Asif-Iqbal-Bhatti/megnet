@@ -66,13 +66,13 @@ class TestCallBack(unittest.TestCase):
         with ScratchDir("."):
             callbacks = [ManualStop()]
             epoch_count = 0
-            for i in range(3):
+            for _ in range(3):
                 if not getattr(self.model, "stop_training", False):
                     self.model.fit(self.train_gen, steps_per_epoch=1, epochs=1, callbacks=callbacks, verbose=0)
                     epoch_count += 1
             self.assertEqual(epoch_count, 3)
             open("STOP", "a").close()
-            for i in range(3):
+            for _ in range(3):
                 if not getattr(self.model, "stop_training", False):
                     self.model.fit(self.train_gen, steps_per_epoch=1, epochs=1, callbacks=callbacks, verbose=0)
                     epoch_count += 1

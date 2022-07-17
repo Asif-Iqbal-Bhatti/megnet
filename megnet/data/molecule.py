@@ -164,7 +164,7 @@ class MolecularGraph(StructureGraph):
         self.distance_converter = distance_converter
         self.max_ring_size = max_ring_size
 
-    def convert(self, mol, state_attributes: List = None, full_pair_matrix: bool = True) -> Dict:  # type: ignore
+    def convert(self, mol, state_attributes: List = None, full_pair_matrix: bool = True) -> Dict:    # type: ignore
         """
         Compute the representation for a molecule
 
@@ -180,14 +180,13 @@ class MolecularGraph(StructureGraph):
         atom_features = []
         atom_pairs: List[Dict] = []
 
-        for idx, atom in enumerate(mol.atoms):
+        for atom in mol.atoms:
             f = self.get_atom_feature(mol, atom)
             atom_features.append(f)
         atom_features = sorted(atom_features, key=lambda x: x["coordid"])
         num_atoms = mol.OBMol.NumAtoms()
-        for i, j in itertools.combinations(range(0, num_atoms), 2):
-            bond_feature = self.get_pair_feature(mol, i, j, full_pair_matrix)
-            if bond_feature:
+        for i, j in itertools.combinations(range(num_atoms), 2):
+            if bond_feature := self.get_pair_feature(mol, i, j, full_pair_matrix):
                 atom_pairs.append(bond_feature)
             else:
                 continue
@@ -205,10 +204,7 @@ class MolecularGraph(StructureGraph):
         ]
 
         # Get the atom features in the order they are requested by the user as a 2D array
-        atoms = []
-        for atom in atom_features:
-            atoms.append(self._create_atom_feature_vector(atom))
-
+        atoms = [self._create_atom_feature_vector(atom) for atom in atom_features]
         # Get the bond features in the order request by the user
         bonds = []
         index1_temp = []
@@ -224,7 +220,7 @@ class MolecularGraph(StructureGraph):
         # Given the bonds (i,j), make it so (i,j) == (j, i)
         index1 = index1_temp + index2_temp
         index2 = index2_temp + index1_temp
-        bonds = bonds + bonds
+        bonds += bonds
 
         # Sort the arrays by the beginning index
         sorted_arg = np.argsort(index1)
@@ -301,10 +297,7 @@ class MolecularGraph(StructureGraph):
         Returns:
             ([int]) Distance for each pair of bonds
         """
-        bonds = []
-        for p in pairs:
-            if p["bond_type"] > 0:
-                bonds.append([p["a_idx"], p["b_idx"]])
+        bonds = [[p["a_idx"], p["b_idx"]] for p in pairs if p["bond_type"] > 0]
         return dijkstra_distance(bonds)
 
     def get_atom_feature(
@@ -392,12 +385,8 @@ class MolecularGraph(StructureGraph):
         if not bond:  # If the bond is ordered in the other direction
             bond = mol.OBMol.GetBond(eid + 1, bid + 1)
 
-        # If the atoms are not bonded
         if not bond:
-            if full_pair_matrix:
-                return self.create_bond_feature(mol, bid, eid)
-            return None
-
+            return self.create_bond_feature(mol, bid, eid) if full_pair_matrix else None
         # Compute bond features
         a1 = mol.OBMol.GetAtom(bid + 1)
         a2 = mol.OBMol.GetAtom(eid + 1)
@@ -505,8 +494,7 @@ def mol_from_file(file_path: str, file_format: str = "xyz"):
         file_path(str)
         file_format(str): allow formats that open babel supports
     """
-    mol = list(pybel.readfile(format=file_format, filename=file_path))[0]
-    return mol
+    return list(pybel.readfile(format=file_format, filename=file_path))[0]
 
 
 def _convert_mol(mol: str, molecule_format: str, converter: MolecularGraph) -> Dict:
@@ -603,11 +591,9 @@ class MolecularGraphBatchGenerator(BaseGraphBatchGenerator):
             ([dict]): Graphs for all of the molecules
         """
         if self.pool is None:
-            graphs = [_convert_mol(m, self.molecule_format, self.converter) for m in mols]
-        else:
-            func = partial(_convert_mol, molecule_format=self.molecule_format, converter=self.converter)
-            graphs = self.pool.map(func, mols)
-        return graphs
+            return [_convert_mol(m, self.molecule_format, self.converter) for m in mols]
+        func = partial(_convert_mol, molecule_format=self.molecule_format, converter=self.converter)
+        return self.pool.map(func, mols)
 
     def create_cached_generator(self) -> GraphBatchGenerator:
         """Generates features for all of the molecules and stores them in memory

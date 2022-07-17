@@ -124,9 +124,7 @@ class _AtomEmbeddingMap(Converter):
         """
         features = []
         for atom in atoms:
-            emb = 0
-            for k, v in atom.items():
-                emb += np.array(self.embedding_dict[k]) * v
+            emb = sum(np.array(self.embedding_dict[k]) * v for k, v in atom.items())
             features.append(emb)
         return np.array(features).reshape((len(atoms), -1))
 

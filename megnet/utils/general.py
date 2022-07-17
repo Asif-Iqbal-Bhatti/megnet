@@ -13,9 +13,7 @@ def to_list(x: Union[Iterable, np.ndarray]) -> List:
     """
     if isinstance(x, Iterable):
         return list(x)
-    if isinstance(x, np.ndarray):
-        return x.tolist()  # noqa
-    return [x]
+    return x.tolist() if isinstance(x, np.ndarray) else [x]
 
 
 def expand_1st(x: np.ndarray) -> np.ndarray:

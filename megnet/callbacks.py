@@ -70,27 +70,26 @@ class ModelCheckpointMAE(Callback):
         self.steps_per_val = steps_per_val or len(val_gen)
         self.target_scaler = target_scaler or DummyScaler()
 
-        if monitor == "val_mae":
-            self.metric = mae
-            self.monitor = "val_mae"
-        elif monitor == "val_acc":
+        if monitor == "val_acc":
             self.metric = accuracy
             self.filepath = self.filepath.replace("val_mae", "val_acc")
             self.monitor = "val_acc"
 
-        if mode == "min":
+        elif monitor == "val_mae":
+            self.metric = mae
+            self.monitor = "val_mae"
+        if mode == "max":
+            self.monitor_op = np.greater
+            self.best = -np.Inf
+        elif mode == "min":
             self.monitor_op = np.less
             self.best = np.Inf
-        elif mode == "max":
+        elif "acc" in self.monitor or self.monitor.startswith("fmeasure"):
             self.monitor_op = np.greater
             self.best = -np.Inf
         else:
-            if "acc" in self.monitor or self.monitor.startswith("fmeasure"):
-                self.monitor_op = np.greater
-                self.best = -np.Inf
-            else:
-                self.monitor_op = np.less
-                self.best = np.Inf
+            self.monitor_op = np.less
+            self.best = np.Inf
 
     def on_epoch_end(self, epoch: int, logs: Dict = None) -> None:
         """
@@ -121,20 +120,18 @@ class ModelCheckpointMAE(Callback):
             if self.save_best_only:
                 if current is None:
                     warnings.warn(f"Can save best model only with {self.monitor} available, skipping.", RuntimeWarning)
-                else:
-                    if self.monitor_op(current, self.best):
-                        logger.info(
-                            f"\nEpoch {epoch+1:05d}: {self.monitor} improved from {self.best:.5f} to {current:.5f},"
-                            f" saving model to {filepath}"
-                        )
-                        self.best = current
-                        if self.save_weights_only:
-                            self.model.save_weights(filepath, overwrite=True)
-                        else:
-                            self.model.save(filepath, overwrite=True)
+                elif self.monitor_op(current, self.best):
+                    logger.info(
+                        f"\nEpoch {epoch+1:05d}: {self.monitor} improved from {self.best:.5f} to {current:.5f},"
+                        f" saving model to {filepath}"
+                    )
+                    self.best = current
+                    if self.save_weights_only:
+                        self.model.save_weights(filepath, overwrite=True)
                     else:
-                        if self.verbose > 0:
-                            logger.info(f"\nEpoch {epoch+1:05d}: {self.monitor} did not improve from {self.best:.5f}")
+                        self.model.save(filepath, overwrite=True)
+                elif self.verbose > 0:
+                    logger.info(f"\nEpoch {epoch+1:05d}: {self.monitor} did not improve from {self.best:.5f}")
             else:
                 logger.info(f"\nEpoch {epoch+1:05d}: saving model to {filepath}")
                 if self.save_weights_only:
@@ -203,15 +200,15 @@ class ReduceLRUponNan(Callback):
         self.monitor = monitor
         super().__init__()
 
-        if mode == "min":
-            self.monitor_op = np.argmin
-        elif mode == "max":
+        if (
+            mode != "max"
+            and mode != "min"
+            and "acc" in self.monitor
+            or mode == "max"
+        ):
             self.monitor_op = np.argmax
         else:
-            if "acc" in self.monitor:
-                self.monitor_op = np.argmax
-            else:
-                self.monitor_op = np.argmin
+            self.monitor_op = np.argmin
 
         # get variable name
         variable_name_pattern = r"{(.+?)}"
@@ -234,10 +231,12 @@ class ReduceLRUponNan(Callback):
         logs = logs or {}
         loss = logs.get("loss")
         last_saved_epoch, last_metric, last_file = self._get_checkpoints()
-        if last_saved_epoch is not None:
-            if last_saved_epoch + self.patience <= epoch:
-                self.model.stop_training = True
-                logger.info(f"{self.monitor} does not improve after {self.patience}, stopping the fitting...")
+        if (
+            last_saved_epoch is not None
+            and last_saved_epoch + self.patience <= epoch
+        ):
+            self.model.stop_training = True
+            logger.info(f"{self.monitor} does not improve after {self.patience}, stopping the fitting...")
 
         if loss is not None:
             self.losses.append(loss)
@@ -247,15 +246,13 @@ class ReduceLRUponNan(Callback):
                 self._reduce_lr_and_load(last_file)
                 if self.verbose:
                     logger.info(f"Now lr is {float(kb.eval(self.model.optimizer.lr))}.")
-            else:
-                if len(self.losses) > 1:
-                    if self.losses[-1] > (self.losses[-2] * 100):
-                        self._reduce_lr_and_load(last_file)
-                        if self.verbose:
-                            logger.info(
-                                f"Loss shot up from {self.losses[-2]:.3f} to {self.losses[-1]:.3f}! Reducing lr "
-                            )
-                            logger.info(f"Now lr is {float(kb.eval(self.model.optimizer.lr))}.")
+            elif len(self.losses) > 1 and self.losses[-1] > (self.losses[-2] * 100):
+                self._reduce_lr_and_load(last_file)
+                if self.verbose:
+                    logger.info(
+                        f"Loss shot up from {self.losses[-2]:.3f} to {self.losses[-1]:.3f}! Reducing lr "
+                    )
+                    logger.info(f"Now lr is {float(kb.eval(self.model.optimizer.lr))}.")
 
     def _reduce_lr_and_load(self, last_file):
         old_value = float(kb.eval(self.model.optimizer.lr))

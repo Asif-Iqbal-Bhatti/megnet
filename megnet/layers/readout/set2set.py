@@ -169,7 +169,7 @@ class Set2Set(Layer):
         self.h = tf.zeros(tf.stack([n_feature, n_count, self.n_hidden]))
         self.c = tf.zeros(tf.stack([n_feature, n_count, self.n_hidden]))
         q_star = tf.zeros(tf.stack([n_feature, n_count, 2 * self.n_hidden]))
-        for i in range(self.T):
+        for _ in range(self.T):
             self.h, c = self._lstm(q_star, self.c)
             e_i_t = tf.reduce_sum(input_tensor=m * tf.repeat(self.h, repeats=counts, axis=1), axis=-1)
             maxes = tf.math.segment_max(e_i_t[0], feature_graph_index)

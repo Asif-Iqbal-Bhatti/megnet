@@ -11,22 +11,21 @@ MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def _equal(x, y):
     if isinstance(x, list):
-        return all([_equal(i, j) for i, j in zip(x, y)])
+        return all(_equal(i, j) for i, j in zip(x, y))
     elif isinstance(x, dict):
         return all(_equal(x[i], y[i]) for i in x.keys())
     else:
         if x == y:
             return True
-        else:
-            print(x, y)
-            return False
+        print(x, y)
+        return False
 
 
 def _sort_neighbors(neighbors):
-    out = []
-    for n in neighbors:
-        out.append([sorted(n, key=lambda x: (x["weight"], x["site_index"]))])
-    return out
+    return [
+        [sorted(n, key=lambda x: (x["weight"], x["site_index"]))]
+        for n in neighbors
+    ]
 
 
 class TestLocalEnv(unittest.TestCase):

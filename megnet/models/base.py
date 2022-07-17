@@ -357,15 +357,13 @@ class GraphModel:
         inputs = self.graph_converter.get_flat_data(graphs)
         n_atoms = [len(graph["atom"]) for graph in graphs]
         pred_gen = self._create_generator(*inputs, is_shuffle=False)
-        predicted = []
-        for i in pred_gen:
-            predicted.append(self.predict(i))
+        predicted = [self.predict(i) for i in pred_gen]
         pred_targets = np.concatenate(predicted, axis=1)[0]
         return np.array([self.target_scaler.inverse_transform(i, j) for i, j in zip(pred_targets, n_atoms)])
 
     def _create_generator(self, *args, **kwargs) -> Union[GraphBatchDistanceConvert, GraphBatchGenerator]:
         if hasattr(self.graph_converter, "bond_converter"):
-            kwargs.update({"distance_converter": self.graph_converter.bond_converter})
+            kwargs["distance_converter"] = self.graph_converter.bond_converter
             return GraphBatchDistanceConvert(*args, **kwargs)
         return GraphBatchGenerator(*args, **kwargs)
 
@@ -382,8 +380,12 @@ class GraphModel:
         """
         self.model.save(filename)
         dumpfn(
-            {"graph_converter": self.graph_converter, "target_scaler": self.target_scaler, "metadata": self.metadata},
-            filename + ".json",
+            {
+                "graph_converter": self.graph_converter,
+                "target_scaler": self.target_scaler,
+                "metadata": self.metadata,
+            },
+            f"{filename}.json",
         )
 
     @classmethod
@@ -399,7 +401,7 @@ class GraphModel:
         Returns
             GraphModel
         """
-        configs = loadfn(filename + ".json")
+        configs = loadfn(f"{filename}.json")
         from tensorflow.keras.models import load_model
 
         from megnet.layers import _CUSTOM_OBJECTS

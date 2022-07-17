@@ -32,7 +32,7 @@ def get_graphs_within_cutoff(
         pbc = np.array([0, 0, 0], dtype=int)
     else:
         raise ValueError("structure type not supported")
-    r = float(cutoff)
+    r = cutoff
     cart_coords = np.ascontiguousarray(np.array(structure.cart_coords), dtype=float)
     center_indices, neighbor_indices, images, distances = find_points_in_spheres(
         cart_coords, cart_coords, r=r, pbc=pbc, lattice=lattice_matrix, tol=numerical_tol

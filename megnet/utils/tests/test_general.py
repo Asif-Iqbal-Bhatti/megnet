@@ -14,7 +14,7 @@ class TestGeneralUtils(unittest.TestCase):
     def test_to_list(self):
         x = 1
         y = [1]
-        z = tuple([1, 2, 3])
+        z = 1, 2, 3
         v = np.array([1, 2, 3])
         k = np.array([[1, 2], [3, 4]])
         for k in [x, y, z, v, k]:

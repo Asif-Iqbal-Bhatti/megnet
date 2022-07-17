@@ -81,5 +81,4 @@ def gather(tensor: tf.Tensor, indices: tf.Tensor) -> tf.Tensor:
     """
     ta = tf.TensorArray(dtype=DataType.tf_float, size=0, dynamic_size=True)
     ta = ta.unstack(tensor)
-    results = ta.gather(indices)
-    return results
+    return ta.gather(indices)

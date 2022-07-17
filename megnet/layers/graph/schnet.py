@@ -181,8 +181,7 @@ class InteractionLayer(GraphNetworkLayer):
         )
 
         atomwise2 = self.activation(self._mlp(after_cfconv, self.phi_v_weights[1], self.phi_v_biases[1]))
-        atomwise3 = self._mlp(atomwise2, self.phi_v_weights[2], self.phi_v_biases[2])
-        return atomwise3
+        return self._mlp(atomwise2, self.phi_v_weights[2], self.phi_v_biases[2])
 
     def phi_v(self, b_ei_p, inputs):
         """
@@ -232,8 +231,7 @@ class InteractionLayer(GraphNetworkLayer):
 
     @staticmethod
     def _mlp(input_, weights, bias):
-        output = kb.dot(input_, weights) + bias
-        return output
+        return kb.dot(input_, weights) + bias
 
     def get_config(self):
         """
@@ -242,5 +240,4 @@ class InteractionLayer(GraphNetworkLayer):
             configurational dictionary
 
         """
-        base_config = super().get_config()
-        return base_config
+        return super().get_config()

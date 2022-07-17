@@ -92,7 +92,7 @@ class MEGNetLayer(GraphNetworkLayer):
             self.seg_method = tf.math.segment_sum
             self.unsorted_seg_method = tf.math.unsorted_segment_sum
         else:
-            raise ValueError("Pool method: " + pool_method + " not understood!")
+            raise ValueError(f"Pool method: {pool_method} not understood!")
 
     def build(self, input_shapes):
         """
@@ -200,12 +200,11 @@ class MEGNetLayer(GraphNetworkLayer):
         node_feature_shape = input_shape[0]
         edge_feature_shape = input_shape[1]
         state_feature_shape = input_shape[2]
-        output_shape = [
+        return [
             (node_feature_shape[0], node_feature_shape[1], self.units_v[-1]),
             (edge_feature_shape[0], edge_feature_shape[1], self.units_e[-1]),
             (state_feature_shape[0], state_feature_shape[1], self.units_u[-1]),
         ]
-        return output_shape
 
     def phi_e(self, inputs):
         """

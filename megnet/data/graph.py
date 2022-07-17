@@ -71,7 +71,7 @@ class StructureGraph(MSONable):
             for i, j in kwargs.items():
                 if i in param_dict:
                     setattr(self, i, j)
-                    param_dict.update({i: j})
+                    param_dict[i] = j
             self.nn_strategy = strategy(**param_dict)
         elif isinstance(nn_strategy, NearNeighbors):
             self.nn_strategy = nn_strategy
@@ -178,11 +178,11 @@ class StructureGraph(MSONable):
             tuple(node_features, edges_features, global_values, index1, index2, targets)
         """
 
-        output = []  # Will be a list of arrays
+        output = [
+            [np.array(x[feature]) for x in graphs]
+            for feature in ["atom", "bond", "state", "index1", "index2"]
+        ]
 
-        # Convert the graphs to matrices
-        for feature in ["atom", "bond", "state", "index1", "index2"]:
-            output.append([np.array(x[feature]) for x in graphs])
 
         # If needed, add the targets
         if targets is not None:
@@ -446,8 +446,7 @@ class BaseGraphBatchGenerator(Sequence):
             # offset_ind += max(ind1) + 1
             offset_ind += n_atom
 
-        # Compile the inputs in needed order
-        inputs = (
+        return (
             expand_1st(feature_list_temp),
             expand_1st(connection_list_temp),
             expand_1st(global_list_temp),
@@ -456,7 +455,6 @@ class BaseGraphBatchGenerator(Sequence):
             expand_1st(np.array(gnode, dtype=np.int32)),
             expand_1st(np.array(gbond, dtype=np.int32)),
         )
-        return inputs
 
     def on_epoch_end(self):
         """
@@ -674,6 +672,4 @@ def itemgetter_list(data_list: List, indices: List) -> tuple:
         (tuple)
     """
     it = itemgetter(*indices)
-    if np.size(indices) == 1:
-        return (it(data_list),)
-    return it(data_list)
+    return (it(data_list), ) if np.size(indices) == 1 else it(data_list)

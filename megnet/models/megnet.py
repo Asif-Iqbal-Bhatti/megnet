@@ -126,7 +126,7 @@ class MEGNetModel(GraphModel):
 
         opt_params = {"lr": lr}
         if optimizer_kwargs is not None:
-            opt_params.update(optimizer_kwargs)
+            opt_params |= optimizer_kwargs
         model.compile(Adam(**opt_params), loss, metrics=metrics, sample_weight_mode=sample_weight_mode)
 
         if graph_converter is None:
@@ -150,7 +150,7 @@ class MEGNetModel(GraphModel):
 
         fname = url.split("/")[-1]
         urllib.request.urlretrieve(url, fname)
-        urllib.request.urlretrieve(url + ".json", fname + ".json")
+        urllib.request.urlretrieve(f"{url}.json", f"{fname}.json")
         return cls.from_file(fname)
 
     @classmethod
@@ -245,8 +245,8 @@ def make_megnet_model(
         else:
             # the bond attributes are float distance
             x2 = Input(shape=(None,), dtype=DataType.tf_float, name="bond_float_input")
-            centers = kwargs.get("centers", None)
-            width = kwargs.get("width", None)
+            centers = kwargs.get("centers")
+            width = kwargs.get("width")
             if centers is None and width is None:
                 raise ValueError(
                     "If the bond attributes are single float values, "
@@ -277,11 +277,7 @@ def make_megnet_model(
     x6 = Input(shape=(None,), dtype=DataType.tf_int, name="atom_graph_index_input")
     x7 = Input(shape=(None,), dtype=DataType.tf_int, name="bond_graph_index_input")
 
-    if l2_coef is not None:
-        reg = l2(l2_coef)
-    else:
-        reg = None
-
+    reg = l2(l2_coef) if l2_coef is not None else None
     # two feedforward layers
     def ff(x, n_hiddens=[n1, n2], name_prefix=None):
         if name_prefix is None:
@@ -326,10 +322,7 @@ def make_megnet_model(
     x2_ = ff(x2_, name_prefix="preblock_bond")
     x3_ = ff(x3_, name_prefix="preblock_state")
     for i in range(nblocks):
-        if i == 0:
-            has_ff = False
-        else:
-            has_ff = True
+        has_ff = i != 0
         x1_1 = x1_
         x2_1 = x2_
         x3_1 = x3_
@@ -352,10 +345,7 @@ def make_megnet_model(
     # final dense layers
     final_vec = Dense(n2, activation=act, kernel_regularizer=reg, name="readout_0")(final_vec)
     final_vec = Dense(n3, activation=act, kernel_regularizer=reg, name="readout_1")(final_vec)
-    if is_classification:
-        final_act = "sigmoid"
-    else:
-        final_act = None  # type: ignore
+    final_act = "sigmoid" if is_classification else None
     out = Dense(ntarget, activation=final_act, name="readout_2")(final_vec)
     model = Model(inputs=[x1, x2, x3, x4, x5, x6, x7], outputs=out)
     return model
